@@ -1,0 +1,15 @@
+name: "Cloudflare"
+description: "Runs cloudflare daemon in docker"
+version: "0.0.2"
+slug: "cloudflare_daemon"
+init: false
+ingress: false
+arch:
+  - amd64
+
+options:
+  cloudflare:
+    token: insert token here
+schema:
+  cloudflare:
+    token: str

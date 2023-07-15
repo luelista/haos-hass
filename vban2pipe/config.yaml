@@ -1,0 +1,16 @@
+---
+name: vban2pipe
+version: "0.1"
+slug: vban2pipe
+description: vban2pipe
+init: false
+map:
+  - share:rw
+ports:
+  6980/udp: 6980
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386

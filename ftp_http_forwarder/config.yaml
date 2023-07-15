@@ -1,0 +1,37 @@
+name: "FTP-HTTP-Forwarder"
+description: "FTP-HTTP-Forwarder!"
+version: "1.0.0"
+slug: "ftp_http_forwarder"
+init: false
+ingress: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+options:
+  target:
+    url: "target url"
+  ftp:
+    user: "username"
+    pass: "password"
+    port: 2121
+    host: "127.0.0.1"
+    passiveports: "2130-2134"
+schema:
+  target:
+    url: str
+  ftp:
+    user: str
+    pass: str
+    port: int
+    host: str
+    passiveports: str
+ports:
+  2121/tcp: 2121
+  2130/tcp: 2130
+  2131/tcp: 2131
+  2132/tcp: 2132
+  2133/tcp: 2133
+  2134/tcp: 2134
