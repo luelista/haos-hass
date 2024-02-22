@@ -1,0 +1,17 @@
+name: "Etikettendruck"
+description: "Etikettendruck!"
+version: "1.0.2"
+slug: "hello_world"
+init: false
+ingress: true
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+uart: true
+options:
+  printer_serial_port: "Printer Serial Port"
+schema:
+  printer_serial_port: "device(subsystem=tty)"

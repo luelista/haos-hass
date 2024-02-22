@@ -1,0 +1,5 @@
+#serialPort = ('192.168.178.200', 10001)
+serialPort="/dev/ttyUSB1"
+inventoryUrlPrefix='example.com/'
+serverListen=8099
+

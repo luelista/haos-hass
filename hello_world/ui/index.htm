@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Canvas experiment</title>
+    <style>
+      body {background: white;}
+      #fontFaceList li {padding:10px; list-style-type: none;border-top: 1px solid #999;}
+    </style>
+    <script src="JsBarcode.itf.min.js"></script>
+    <script type="application/javascript">
+        var dotswidth = 128;
+var barcodeFactor=80;
+      function draw() {
+        const canvas = document.getElementById("canvas");
+        const barcodeCanvas = document.getElementById("barcode");
+        const ctx = canvas.getContext("2d");
+        const fontSize = document.getElementById("fontSize").value;
+        var fontFace = document.getElementById("fontFace").value;
+        if (fontFace!="sans-serif")fontFace="'"+fontFace+"'";
+        ctx.font = ""+fontSize+"px "+fontFace+"";
+        var text = document.getElementById("inputTxt").value;
+        var lines = text.split(/\n/); 
+        var width = 0;
+        var lineheight = fontSize;
+        var remainheight = Math.max(0, dotswidth - (lines.length*lineheight) - 15);
+        var linepadding = remainheight / (lines.length + 1)
+        for(var i = 0; i < lines.length; i++) {
+          var measurement = ctx.measureText(lines[i]);
+          width = Math.max(width, measurement.width);
+        }
+        canvas.width = width;
+        canvas.height = dotswidth;
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for(var i = 0; i < lines.length; i++) {
+          ctx.textBaseline = "top";
+          ctx.fillStyle = "black";
+          ctx.font = ""+fontSize+"px "+fontFace+"";
+          ctx.fillText(lines[i], 0, (i*lineheight + linepadding)|0);
+          
+          
+        }
+        var barcodeStr = document.getElementById("barcodeInput").value;
+        if (barcodeStr) {
+          JsBarcode(barcodeCanvas, barcodeStr, {margin:0,displayValue:false,width:Math.floor(width/barcodeFactor)});
+          ctx.drawImage(barcodeCanvas, 0, canvas.height-20);
+        }
+      }
+
+      function convertToPBM(ctx){
+        var out = "P1\n" + ctx.canvas.width + " " + ctx.canvas.height + "\n";
+        var imgData = ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
+        var d = imgData.data;
+        var i = 0;
+        console.log(d);
+        while(i < d.length){
+            out += convertRgbToBinary(d[i++],d[i++],d[i++]) ? "0" : "1";
+            i++; // skip alpha
+        }
+        return out;
+      }
+      function convertRgbToBinary(r,g,b) {
+        return ((r + g + b) / 3 ) > 127;
+      }
+      function print() {
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const bitmap = convertToPBM(ctx);
+        const btn = document.getElementById("printBtn");
+        btn.disabled = true;
+        btn.innerText = "Please wait ...";
+        fetch('print', {
+          method: 'POST', body: bitmap, headers: {'content-type':'image/pbm'}
+        })
+        .then((response) => response.json())
+        .then(function(value) {
+          console.log("Print result:", value)
+          if (!value.success) alert("Print failed: \n"+value.message);
+          btn.disabled = false;
+          btn.innerText = "Print";
+        })
+        .catch(function(reason) {
+          btn.disabled = false;
+          btn.innerText = "Print";
+          alert("Print failed.\n"+reason);
+        });
+      }
+      function requestStatus() {
+        fetch('status', {
+          method: 'POST', body: "",
+        })
+        .then((response) => response.json())
+        .then(function(value) {
+          console.log("Status result:", value)
+          if (!value.success) alert("Status request failed. Check if printer is connected and switched on. \n"+value.message);
+          else {
+            dotswidth = value.dotswidth;
+            document.getElementById("statusText").innerText = value.statusText;
+            draw();
+          }
+        })
+        .catch(function(reason) {
+          alert("Status request failed. Check if printer is connected and switched on. \n"+reason);
+        });
+      }
+
+      window.addEventListener("paste", function(e){
+        var items = e.clipboardData.items;
+        var blob = items[0].getAsFile();
+        var img = new Image();
+        img.onload = function(){
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+            // Update dimensions of the canvas with the dimensions of the image
+            canvas.width = this.width;
+
+            // Draw the image
+            ctx.drawImage(img, 0, 0);
+        };
+
+        // Crossbrowser support for URL
+        var URLObj = window.URL || window.webkitURL;
+
+        // Creates a DOMString containing a URL representing the object given in the parameter
+        // namely the original Blob
+        img.src = URLObj.createObjectURL(blob);
+      });
+    </script>
+  </head>
+  <body onload="draw();requestStatus();">
+    <hr style="background:repeating-linear-gradient(45deg,#ff00dd,#ff00dd 12px,#bb11ee 12px,#bb11ee 24px,#0000ff 24px,#0000ff 36px,transparent 0,transparent 40px);border:0;height:12px;">
+    <textarea id="inputTxt" oninput="draw();" style="width:100%;" cols="70"></textarea>
+    <hr>
+
+    <canvas id="canvas" style="border:1px solid red;"></canvas>
+    <hr>
+    <input type="text" id="barcodeInput" placeholder="barcode">
+    <canvas id="barcode" style="display:none"></canvas>
+    <hr>
+    <button id="printBtn" onclick="print()" style="padding:5px 35px;">Print</button>
+    <hr>
+    <pre id="statusText"></pre>
+    <hr>
+    <input type="number" min="14" max="300" value="40" id="fontSize" oninput="draw()">
+    <input type="range" min="14" max="120" value="40" oninput="document.getElementById('fontSize').value=this.value; draw()">
+    <br><select id="fontFace" oninput="draw();setTimeout(draw,100);"></select>
+<br>
+<ul id="fontFaceList"></ul>
+    <link href='https://fonts.googleapis.com/css?family=Montez|Lobster|Josefin+Sans|Shadows+Into+Light|Pacifico|Amatic+SC:700|Orbitron:400,900|Rokkitt|Righteous|Dancing+Script:700|Bangers|Chewy|Sigmar+One|Architects+Daughter|Abril+Fatface|Covered+By+Your+Grace|Kaushan+Script|Gloria+Hallelujah|Satisfy|Lobster+Two:700|Comfortaa:700|Cinzel|Courgette|Rubik Mono One|Fira Mono' rel='stylesheet' type='text/css'>
+
+    <script>
+      var fonts = ["sans-serif","Arial","Montez","Lobster","Josefin Sans","Shadows Into Light","Pacifico","Amatic SC", "Orbitron", "Rokkitt","Righteous","Dancing Script","Bangers","Chewy","Sigmar One","Architects Daughter","Abril Fatface","Covered By Your Grace","Kaushan Script","Gloria Hallelujah","Satisfy","Lobster Two","Comfortaa","Cinzel","Courgette","Rubik Mono One","Fira Mono"];
+var string = "";
+var select = document.getElementById("fontFace");
+var fntList = document.getElementById("fontFaceList");
+for(var a = 0; a < fonts.length ; a++){
+	var opt = document.createElement('option');
+	opt.value = opt.innerHTML = fonts[a];
+	opt.style.fontFamily = fonts[a];
+	select.add(opt);
+	var li = document.createElement('li');
+	li.innerText = fonts[a];
+	li.style.fontFamily = fonts[a];
+  li.onclick = function() { select.value = this.innerText; draw(); }
+	fntList.appendChild(li);
+}
+    </script>
+  </body>
+</html>
